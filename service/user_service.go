@@ -15,41 +15,29 @@ func NewUserService(repo repository.UserRepository) *UserService {
 }
 
 func (s *UserService) Create(user model.User) error {
-	if s.repo.ExistsByID(user.Id) {
-		return errors.New("duplicate id")
+	exists, err := s.repo.Exists(user.Id)
+	if err != nil {
+		return err
 	}
-	if user.Name == "" {
-		return errors.New("name empty")
+	if exists {
+		return errors.New("user already exists")
 	}
-	s.repo.Save(user)
-	return nil
+	return s.repo.Save(user)
 }
 
 func (s *UserService) Get(id int) (model.User, error) {
-	user, ok := s.repo.GetById(id)
-	if !ok {
-		return model.User{}, errors.New("not found")
-
-	}
-	return user, nil
+	return s.repo.GetByID(id)
 }
 
 func (s *UserService) Update(id int, name string) error {
-	user, ok := s.repo.GetById(id)
-	if !ok {
-		return errors.New("not found")
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		return err
 	}
-
 	user.Name = name
-	s.repo.Update(user)
-	return nil
+	return s.repo.Update(user)
 }
 
 func (s *UserService) Delete(id int) error {
-	if !s.repo.ExistsByID(id) {
-		return errors.New("not found")
-	}
-
-	s.repo.Delete(id)
-	return nil
+	return s.repo.Delete(id)
 }

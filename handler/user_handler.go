@@ -23,60 +23,48 @@ func (h *UserHandler) HandleUsers(w http.ResponseWriter, r *http.Request) {
 		var user model.User
 		json.NewDecoder(r.Body).Decode(&user)
 
-		err := h.service.Create(user)
-		if err != nil {
-			w.WriteHeader(http.StatusConflict)
+		if err := h.service.Create(user); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
 		return
 	}
 
-	//get /users/{id}
-	if r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/users/") {
-		idStr := strings.TrimPrefix(r.URL.Path, "/users/")
-		id, _ := strconv.Atoi(idStr)
+	if strings.HasPrefix(r.URL.Path, "/users/") {
+		id, _ := strconv.Atoi(strings.TrimPrefix(r.URL.Path, "/users/"))
 
-		user, err := h.service.Get(id)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
+		switch r.Method {
+
+		case http.MethodGet:
+			user, err := h.service.Get(id)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
+			json.NewEncoder(w).Encode(user)
+
+		case http.MethodPut:
+			var body struct {
+				Name string `json:"name"`
+			}
+			json.NewDecoder(r.Body).Decode(&body)
+
+			if err := h.service.Update(id, body.Name); err != nil {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+
+		case http.MethodDelete:
+			if err := h.service.Delete(id); err != nil {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
 		}
-
-		json.NewEncoder(w).Encode(user)
 		return
 	}
 
-	if r.Method == http.MethodPut && strings.HasPrefix(r.URL.Path, "/users/") {
-		idStr := strings.TrimPrefix(r.URL.Path, "/users/")
-		id, _ := strconv.Atoi(idStr)
-
-		var body struct {
-			Name string `json:"name"`
-		}
-		json.NewDecoder(r.Body).Decode(&body)
-
-		err := h.service.Update(id, body.Name)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	//delete
-
-	if r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/users/") {
-		idStr := strings.TrimPrefix(r.URL.Path, "/users/")
-		id, _ := strconv.Atoi(idStr)
-
-		err := h.service.Delete(id)
-		if err != nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
+	http.NotFound(w, r)
 }
