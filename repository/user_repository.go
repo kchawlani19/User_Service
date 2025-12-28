@@ -2,23 +2,35 @@ package repository
 
 import (
 	"go-basic-user-service/model"
+	"sync"
 )
 
-type UserRepository struct {
-	users []model.User
+type UserRepository interface {
+	ExistsByID(id int) bool
+	Save(user model.User)
+	GetById(id int) (model.User, bool)
+	Update(user model.User)
+	Delete(id int)
 }
 
-func NewUserRepository() *UserRepository {
-	return &UserRepository{
+type InMemoryUserRepository struct {
+	users []model.User
+	mu    sync.Mutex
+}
+
+func NewInMemoryUserRepository() *InMemoryUserRepository {
+	return &InMemoryUserRepository{
 		users: []model.User{},
 	}
 }
 
-func (r *UserRepository) Save(user model.User) {
+func (r *InMemoryUserRepository) Save(user model.User) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.users = append(r.users, user)
 }
 
-func (r *UserRepository) ExistsByID(id int) bool {
+func (r *InMemoryUserRepository) ExistsByID(id int) bool {
 	for i := 0; i < len(r.users); i++ {
 		if r.users[i].Id == id {
 			return true
@@ -27,7 +39,7 @@ func (r *UserRepository) ExistsByID(id int) bool {
 	return false
 }
 
-func (r *UserRepository) GetById(id int) (model.User, bool) {
+func (r *InMemoryUserRepository) GetById(id int) (model.User, bool) {
 	for _, u := range r.users {
 		if u.Id == id {
 			return u, true
@@ -36,7 +48,7 @@ func (r *UserRepository) GetById(id int) (model.User, bool) {
 	return model.User{}, false
 }
 
-func (r *UserRepository) Update(user model.User) {
+func (r *InMemoryUserRepository) Update(user model.User) {
 	for i := 0; i < len(r.users); i++ {
 		if r.users[i].Id == user.Id {
 			r.users[i] = user
@@ -45,7 +57,7 @@ func (r *UserRepository) Update(user model.User) {
 	}
 }
 
-func (r *UserRepository) Delete(id int) {
+func (r *InMemoryUserRepository) Delete(id int) {
 	for i := 0; i < len(r.users); i++ {
 		if r.users[i].Id == id {
 			r.users = append(r.users[:i], r.users[i+1:]...)

@@ -78,6 +78,5 @@ func (h *UserHandler) HandleUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusNoContent)
 		return
-		//w.WriteHeader(http.StatusNotFound)
 	}
 }

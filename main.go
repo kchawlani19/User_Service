@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	store := repository.NewUserRepository()
+	store := repository.NewInMemoryUserRepository()
 	service := service.NewUserService(store)
 	handler := handler.NewUserHandler(service)
 
